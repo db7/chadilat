@@ -1,0 +1,6 @@
+reader/reader
+viewer/viewer
+.kakrc
+*.o
+*.hex
+*.elf
