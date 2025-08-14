@@ -10,7 +10,11 @@
 #include <termios.h>
 #include <unistd.h>
 
+#ifdef TIMER32BIT
+#define RECORD_SIZE 8
+#else
 #define RECORD_SIZE 6
+#endif
 #define BUFFER_SIZE (300 * RECORD_SIZE)
 
 int configure_serial(int fd, speed_t speed) {
@@ -97,23 +101,20 @@ int main(int argc, char *argv[]) {
     counter |= ((uint8_t)buf[idx++] << 0);
 
     uint32_t timestamp = 0;
-    // timestamp |= ((uint32_t)buf[idx++] << 24);
-    // timestamp |= ((uint32_t)buf[idx++] << 16);
+#ifdef TIMER32BIT
+    timestamp |= ((uint32_t)buf[idx++] << 24);
+    timestamp |= ((uint32_t)buf[idx++] << 16);
+#endif
     timestamp |= ((uint32_t)buf[idx++] << 8);
     timestamp |= ((uint32_t)buf[idx++] << 0);
 
     uint8_t pinb = buf[idx++];
 
     if (counter != ++cnt) {
-      // printf("beep\n");
       cnt = counter;
     }
     assert(++idx == RECORD_SIZE);
 
-    // if (0)
-    //   printf("%4u %lu/%lu (%f): %5u %5u 0x%02X\n", counter - last, cnt,
-    //   total,
-    //          1.0 * cnt / total, counter, timestamp, pinb);
     printf("%u %u %u\n", counter, timestamp, pinb);
     fflush(stdout);
 
