@@ -10,7 +10,7 @@
 #define QUEUE_SIZE 1024
 #define HISTORY_MAX (1024 * 1024)
 
-#define BOOL_COUNT 3
+#define BOOL_COUNT 8
 #define SCREEN_WIDTH 900
 #define SCREEN_HEIGHT 600
 #define MARGIN 50
