@@ -5,14 +5,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <vsync/queue/bounded_spsc.h>
-
+#define TITLE "Cheap and Dirty Logic Analyzer with Teensy"
+#define WINDOW_TITLE "Chadilat"
 #define MAX_DATA 10000
 #define QUEUE_SIZE 1024
 #define HISTORY_MAX (1024 * 1024)
 
-#define BOOL_COUNT 8
-#define SCREEN_WIDTH 900
-#define SCREEN_HEIGHT 600
+#define BOOL_COUNT 4
+#define SCREEN_WIDTH 600
+#define SCREEN_HEIGHT 300
 #define MARGIN 50
 #define MARGIN_SHIFT 20
 #define SPACING ((SCREEN_HEIGHT - 2 * MARGIN) / (1 + BOOL_COUNT))
@@ -81,6 +82,7 @@ static void *loader(void *arg) {
     for (int j = 0; j < BOOL_COUNT; j++) {
       pt->values[j] = (pinb >> j) & 0x1;
     }
+    pt->value = pinb;
     while (bounded_spsc_enq(&queue, pt) != QUEUE_BOUNDED_OK)
       ;
   }
@@ -93,11 +95,10 @@ static void *loader(void *arg) {
 
 void run() {
   srand(time(0));
-  InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT,
-             "SLAT: Simple Logic Analyzer with Teensy");
+  InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, WINDOW_TITLE);
   SetTargetFPS(120);
 
-  unsigned int tick_width = 1;
+  double tick_width = 1;
   unsigned int offset = 0;
   bool paused = false;
 
@@ -126,6 +127,8 @@ void run() {
         cur = history.end;
     } else if (IsKeyDown(KEY_N)) {
       tick_width -= tick_width > 1 ? 1 : 0;
+      if (tick_width <= 1)
+        tick_width -= 0.05;
     } else if (IsKeyDown(KEY_M)) {
       tick_width += 1;
     } else if (IsKeyDown(KEY_L)) {
@@ -169,26 +172,31 @@ void run() {
     BeginDrawing();
     ClearBackground(RAYWHITE);
 
-    // DrawText("Press [SPACE] to pause/resume. Arrows scroll. [Q] to quit.",
-    // 10,
-    //          10, 20, DARKGRAY);
-    DrawText("Cheap and Dirty Logic Analyzer with Teensy", 10, 10, 30,
-             DARKGRAY);
+    DrawText(TITLE, 10, 10, 20, DARKGRAY);
 
     if (paused)
       DrawText("PAUSED", PLOT_WIDTH - MARGIN, 10, 10, RED);
 
-    //    DrawText(TextFormat("WIDTH: %d", tick_width), PLOT_WIDTH - MARGIN, 25,
-    //    10,
-    //           BLACK);
-
-    DrawLine(PLOT_START + 5, MARGIN + SPACING * 2 / 3, PLOT_START + 5,
+    DrawLine(PLOT_START + 0, MARGIN + SPACING * 2 / 3, PLOT_START + 0,
              SCREEN_HEIGHT - MARGIN - SPACING * 2 / 3, GRAY);
 
-    for (int i = 0; now - pt->timestamp + 1 < PLOT_WIDTH * tick_width;
-         i++, pt = pt->prev) {
+    DrawText("time (ms)", (PLOT_START + PLOT_WIDTH / 2 - 8),
+             SCREEN_HEIGHT - MARGIN - SPACING * 2 / 3 + 25, 16, GRAY);
+
+    for (int i = PLOT_START; i < PLOT_END; i += PLOT_WIDTH / 10) {
+      DrawLine(i, MARGIN + SPACING * 2 / 3, i,
+               SCREEN_HEIGHT - MARGIN - SPACING * 2 / 3, GRAY);
+      // 4µs per tick
+      double tick_factor = 4.0 / tick_width / 1000.0;
+      DrawText(TextFormat("%.2f", (i - PLOT_START) * tick_factor), i,
+               SCREEN_HEIGHT - MARGIN - SPACING * 2 / 3 + 3, 12, GRAY);
+    }
+
+    for (; pt; pt = pt->prev) {
 
       int x0 = PLOT_END - (now - pt->timestamp) / tick_width;
+      if (x0 <= PLOT_START)
+        x0 = PLOT_START;
 
       for (int j = 0; j < BOOL_COUNT; j++) {
         int ybase = MARGIN + ((1 + j) * SPACING);
@@ -196,13 +204,12 @@ void run() {
         int y0 = ybase + (b0 ? -10 : 10);
         DrawLine(PLOT_START, ybase, PLOT_END, ybase, LIGHTGRAY);
         size_t font_size = 18;
-        DrawText(TextFormat("Pin B%i", j), MARGIN / 2 - 10,
+        DrawText(TextFormat("PIN %i", j), MARGIN / 2 - 10,
                  ybase - font_size / 2, font_size, BLACK);
 
         // DrawCircle(x0, y0, 3, BLUE);
-        if (i == 0)
+        if (pt->next == NULL)
           continue;
-
         bool b1 = pt->next->values[j];
         int x1 = PLOT_END - (now - pt->next->timestamp) / tick_width;
         int y1 = ybase + (b1 ? -10 : 10);
@@ -216,6 +223,9 @@ void run() {
           DrawLine(xx, y1, x1, y1, BLUE);
         }
       }
+
+      if (x0 <= PLOT_START)
+        break;
     }
     EndDrawing();
   }
