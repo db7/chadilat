@@ -1,6 +1,6 @@
 DEPS=		../deps
 CFLAGS= 	-Wall -Werror -O2 -g
-CFLAGS+=
+CFLAGS+=	-DTIMER32BIT
 
 
 reader: main.c

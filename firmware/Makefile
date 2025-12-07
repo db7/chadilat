@@ -5,6 +5,7 @@ CFLAGS+=	-mmcu=atmega32u4
 CFLAGS+=	-I$(DEPS)/usb_serial
 CFLAGS+=	--param=min-pagesize=0
 CFLAGS+=	-DF_CPU=16000000UL
+CFLAGS+=	-DTIMER32BIT
 
 SRCS=		main.c
 SRCS+=		$(DEPS)/usb_serial/usb_serial.c
