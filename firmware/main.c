@@ -66,11 +66,19 @@ void buf_flush(void) {
 // -----------------------------------------------------------------------------
 
 void timer1_init(void) {
+  // Set Timer Mode to Normal Mode (WGM1[3:0] = 0000)
   TCCR1A = 0;
-  TCCR1B = (1 << CS01) | (1 << CS00); // clk/64 → ~4µs per tick
+  TCCR1B = 0;
+
+  // Set the Prescaler to 64 and start the timer
+  // F_Timer = F_CPU / Prescaler = 16MHz / 64 = 250 kHz
+  // Time per tick = 1 / 250 kHz = 4 microseconds
+  TCCR1B = (1 << CS11) | (1 << CS10); // CS11=1, CS10=1 for /64 prescaler
+
   TCNT1 = 0;
 #ifdef TIMER32BIT
-  TIMSK1 = _BV(TOIE1);
+  // 3. Enable Timer/Counter1 Overflow Interrupt
+  TIMSK1 |= (1 << TOIE1); // Enable overflow interrupt
   sei();
 #endif
 }
