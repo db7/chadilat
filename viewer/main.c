@@ -75,7 +75,7 @@ static void *loader(void *arg) {
   uint32_t counter;
   uint32_t timestamp;
   uint32_t pinb;
-  while (3 == fscanf(fp, "%d %d %d\n", &counter, &timestamp, &pinb)) {
+  while (3 == fscanf(fp, "%u %u %u\n", &counter, &timestamp, &pinb)) {
     struct data_point *pt = malloc(sizeof(struct data_point));
     pt->counter = (uint8_t)counter;
     pt->timestamp = timestamp;
@@ -187,7 +187,7 @@ void run() {
       DrawLine(i, MARGIN + SPACING * 2 / 3, i,
                SCREEN_HEIGHT - MARGIN - SPACING * 2 / 3, GRAY);
       // 4µs per tick
-      double tick_factor = 4.0 / tick_width / 1000.0;
+      double tick_factor = 4.0 / 1000.0 * tick_width;
       DrawText(TextFormat("%.2f", (i - PLOT_START) * tick_factor), i,
                SCREEN_HEIGHT - MARGIN - SPACING * 2 / 3 + 3, 12, GRAY);
     }
